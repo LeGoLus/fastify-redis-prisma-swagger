@@ -41,6 +41,17 @@ npx prisma db push
 docker compose up
 ```
 
+## check logs in redis
+
+```
+docker exec -it redis-server-main redis-cli
+```
+
+then
+
+```
+MONITOR
+```
 In the terminal show log the 2 last line in the terminal show
 - Server started at http://localhost:3001
 - Swagger documentation available at http://localhost:3001/documentation
