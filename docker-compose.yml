@@ -109,6 +109,57 @@
 #   redis_data:
 #   postgres_data:
 
+# version: "3"
+
+# services:
+#   redis:
+#     image: redis:latest
+#     container_name: redis-server-main
+#     ports:
+#       - "6379:6379"
+#     volumes:
+#       - redis_data:/data
+
+#   postgres:
+#     image: postgres:latest
+#     container_name: postgres-db-main
+#     environment:
+#       - POSTGRES_USER=postgres
+#       - POSTGRES_PASSWORD=postgres
+#       - POSTGRES_DB=telehealth
+#     ports:
+#       - "5432:5432"
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+#     restart: always
+#     networks:
+#       - my_network
+
+#   app:
+#     build: .
+#     container_name: fastify-app
+#     environment:
+#       - DATABASE_URL=postgresql://postgres:postgres@postgres-db-main:5432/telehealth?schema=public
+#       - PORT=3001
+#       - HOST=0.0.0.0
+#       - CORS_ORIGIN=http://localhost:3000
+#     ports:
+#       - "3001:3001"
+#     depends_on:
+#       - postgres
+#       - redis
+#     networks:
+#       - my_network
+#     restart: always
+
+# volumes:
+#   redis_data:
+#   postgres_data:
+
+# networks:
+#   my_network:
+#     driver: bridge
+
 version: "3"
 
 services:
@@ -119,6 +170,8 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    networks:
+      - my_network
 
   postgres:
     image: postgres:latest
@@ -140,6 +193,7 @@ services:
     container_name: fastify-app
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@postgres-db-main:5432/telehealth?schema=public
+      - REDIS_URL=redis://redis:6379
       - PORT=3001
       - HOST=0.0.0.0
       - CORS_ORIGIN=http://localhost:3000
@@ -159,3 +213,79 @@ volumes:
 networks:
   my_network:
     driver: bridge
+# Another Version from bolt
+# version: "3.8"
+
+# services:
+#   redis:
+#     image: redis:latest
+#     container_name: redis-server-main
+#     ports:
+#       - "6379:6379"
+#     volumes:
+#       - redis_data:/data
+#     networks:
+#       - app_network
+#     healthcheck:
+#       test: ["CMD", "redis-cli", "ping"]
+#       interval: 5s
+#       timeout: 3s
+#       retries: 5
+
+#   postgres:
+#     image: postgres:latest
+#     container_name: postgres-db-main
+#     environment:
+#       POSTGRES_USER: postgres
+#       POSTGRES_PASSWORD: postgres
+#       POSTGRES_DB: telehealth
+#     ports:
+#       - "5432:5432"
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+#     networks:
+#       - app_network
+#     healthcheck:
+#       test: ["CMD-SHELL", "pg_isready -U postgres"]
+#       interval: 5s
+#       timeout: 3s
+#       retries: 5
+
+#   app:
+#     build:
+#       context: .
+#       dockerfile: Dockerfile
+#     container_name: fastify-app
+#     environment:
+#       DATABASE_URL: postgresql://postgres:postgres@postgres-db-main:5432/telehealth?schema=public
+#       REDIS_URL: redis://redis-server-main:6379
+#       PORT: 3001
+#       HOST: 0.0.0.0
+#       CORS_ORIGIN: http://localhost:3000
+#       NODE_ENV: production
+#     ports:
+#       - "3001:3001"
+#     depends_on:
+#       redis:
+#         condition: service_healthy
+#       postgres:
+#         condition: service_healthy
+#     networks:
+#       - app_network
+#     restart: unless-stopped
+#     deploy:
+#       restart_policy:
+#         condition: on-failure
+#         max_attempts: 3
+#         window: 120s
+
+# volumes:
+#   redis_data:
+#     name: telehealth_redis_data
+#   postgres_data:
+#     name: telehealth_postgres_data
+
+# networks:
+#   app_network:
+#     name: telehealth_network
+#     driver: bridge

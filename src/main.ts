@@ -4,6 +4,8 @@ import fastifyCors from '@fastify/cors';
 import fastifyIO from 'fastify-socket.io';
 import { setupSwagger } from './swagger';
 import dotenv from 'dotenv';
+import { createClient } from 'redis';
+import { createAdapter } from '@socket.io/redis-adapter';
 
 dotenv.config();
 
@@ -11,6 +13,7 @@ const prisma = new PrismaClient();
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const HOST = process.env.HOST || 'localhost';
 const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:3000';
+const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 
 interface JoinRoomRequest {
   roomId: string;
@@ -18,6 +21,15 @@ interface JoinRoomRequest {
   userId: string;
   patientId?: string; 
   consultId?: string; 
+}
+
+async function setupRedis() {
+  const pubClient = createClient({ url: REDIS_URL });
+  const subClient = pubClient.duplicate();
+
+  await Promise.all([pubClient.connect(), subClient.connect()]);
+
+  return { pubClient, subClient };
 }
 
 async function buildServer() {
@@ -36,6 +48,15 @@ async function buildServer() {
   });
   
   await setupSwagger(app);
+
+  // Setup Redis adapter
+  try {
+    const { pubClient, subClient } = await setupRedis();
+    app.io.adapter(createAdapter(pubClient, subClient));
+    console.log('Redis adapter configured successfully');
+  } catch (error) {
+    console.error('Failed to setup Redis adapter:', error);
+  }
 
   app.io.on('connection', (socket) => {
     console.log('Client connected');
@@ -251,6 +272,7 @@ async function main() {
 }
 
 main();
+
 
 
 
